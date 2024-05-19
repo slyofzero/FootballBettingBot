@@ -1,7 +1,5 @@
-interface MatchData {
-  teamA: string;
-  teamB: string;
-  duration: number;
-}
+import { StoredMatch } from "@/types";
 
-export const matchData: { [key: string]: Partial<MatchData> } = {};
+interface MatchData extends Omit<Partial<StoredMatch>, "duration"> {}
+
+export const matchData: { [key: string]: MatchData } = {};

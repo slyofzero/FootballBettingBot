@@ -1,12 +1,14 @@
 import { CallbackQueryContext, CommandContext, Context } from "grammy";
-import { log } from "@/utils/handlers";
+import { errorHandler, log } from "@/utils/handlers";
 import { userState } from "@/vars/userState";
 import { setDuration, setTeamA, setTeamB } from "./commands/match";
+import { confirmDeleteMatch } from "./commands/deleteMatch";
 
 const steps: { [key: string]: any } = {
   setTeamA,
   setTeamB,
   setDuration,
+  confirmDeleteMatch,
 };
 
 export async function executeStep(
@@ -20,7 +22,12 @@ export async function executeStep(
   const stepFunction = steps[step];
 
   if (stepFunction) {
-    stepFunction(ctx);
+    try {
+      await stepFunction(ctx);
+    } catch (error) {
+      errorHandler(error, true);
+      ctx.reply("An error occurred while doing the task.");
+    }
   } else {
     log(`No step function for ${queryCategory} ${userState[chatId]}`);
   }
