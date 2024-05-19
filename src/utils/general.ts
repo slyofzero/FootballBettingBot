@@ -1,5 +1,4 @@
 import { cleanUpBotMessage } from "./bot";
-import { urlRegex } from "./constants";
 
 export function formatToInternational(numberToFormat: string | number) {
   numberToFormat = Number(Number(numberToFormat).toFixed(2));
@@ -70,10 +69,6 @@ export function generateRandomID() {
   const part3 = Array.from({ length: 7 }, generateRandomDigit).join("");
 
   return `${part1}-${part2}-${part3}`;
-}
-
-export function isValidUrl(url: string) {
-  return urlRegex.test(url);
 }
 
 export function floatToBigInt(num: number) {

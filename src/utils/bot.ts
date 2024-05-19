@@ -1,6 +1,15 @@
-import { InlineKeyboard } from "grammy";
-import { advertisements } from "@/vars/advertisements";
-import { BOT_URL } from "./env";
+import { admins } from "@/vars/admins";
+import { CommandContext, Context } from "grammy";
+
+type StepFunctions = (ctx: CommandContext<Context>) => any;
+
+export function adminsOnly(fn: StepFunctions, ctx: CommandContext<Context>) {
+  const isAdmin = admins.some(
+    ({ username }) => username === ctx.chat?.username
+  );
+
+  if (isAdmin) fn(ctx);
+}
 
 // eslint-disable-next-line
 export function cleanUpBotMessage(text: any) {

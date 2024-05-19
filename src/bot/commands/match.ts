@@ -1,6 +1,7 @@
-import { addDocument, getDocument } from "@/firebase";
+import { addDocument } from "@/firebase";
 import { StoredMatch } from "@/types";
 import { defaultOdds } from "@/utils/constants";
+import { currentMatch, syncMatch } from "@/vars/currentMatch";
 import { matchData } from "@/vars/matchData";
 import { userState } from "@/vars/userState";
 import { Timestamp } from "firebase-admin/firestore";
@@ -8,10 +9,6 @@ import { CommandContext, Context } from "grammy";
 import moment from "moment";
 
 export async function setMatch(ctx: CommandContext<Context>) {
-  const currentMatch = (
-    await getDocument<StoredMatch>({ collectionName: "matches" })
-  ).at(0);
-
   // If there's a match already on going
   if (currentMatch) {
     const { teamA, teamB, expiresAt } = currentMatch;
@@ -77,7 +74,7 @@ export async function setDuration(ctx: CommandContext<Context>) {
       teamAOdds: defaultOdds,
       teamBOdds: defaultOdds,
     },
-  });
+  }).then(() => syncMatch());
 
   const message = `Match started between ${teamA} as Team A, and ${teamB} as Team B. Ends in ${duration} hours.`;
   ctx.reply(message);
