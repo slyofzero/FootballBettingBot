@@ -5,4 +5,7 @@ export interface StoredMatch {
   teamA: string;
   teamB: string;
   expiresAt: Timestamp;
+  status: "LIVE" | "EXPIRED";
+  teamAOdds: number;
+  teamBOdds: number;
 }

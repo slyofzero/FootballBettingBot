@@ -1,5 +1,6 @@
 import { addDocument, getDocument } from "@/firebase";
 import { StoredMatch } from "@/types";
+import { defaultOdds } from "@/utils/constants";
 import { matchData } from "@/vars/matchData";
 import { userState } from "@/vars/userState";
 import { Timestamp } from "firebase-admin/firestore";
@@ -68,7 +69,14 @@ export async function setDuration(ctx: CommandContext<Context>) {
 
   addDocument<StoredMatch>({
     collectionName: "matches",
-    data: { teamA: teamA || "", teamB: teamB || "", expiresAt },
+    data: {
+      teamA: teamA || "",
+      teamB: teamB || "",
+      expiresAt,
+      status: "LIVE",
+      teamAOdds: defaultOdds,
+      teamBOdds: defaultOdds,
+    },
   });
 
   const message = `Match started between ${teamA} as Team A, and ${teamB} as Team B. Ends in ${duration} hours.`;

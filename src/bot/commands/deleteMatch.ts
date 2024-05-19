@@ -1,5 +1,6 @@
 import { getDocument, removeDocumentById } from "@/firebase";
 import { StoredMatch } from "@/types";
+import { errorHandler } from "@/utils/handlers";
 import {
   CallbackQueryContext,
   CommandContext,
@@ -35,6 +36,6 @@ export async function confirmDeleteMatch(ctx: CallbackQueryContext<Context>) {
 
   await removeDocumentById({ collectionName: "matches", id: matchId });
   const message = `Deleted match`;
-  ctx.deleteMessage().catch();
+  ctx.deleteMessage().catch((e) => errorHandler(e));
   return ctx.reply(message);
 }
