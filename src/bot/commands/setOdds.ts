@@ -44,7 +44,7 @@ export async function changeOdds(ctx: CallbackQueryContext<Context>) {
   userState[userId] = "confirmOdds";
 
   const { teams } = currentMatch as StoredMatch;
-  const message = `You have to chosen to bet on ${teams[team]}. In the next message, please pass the new odds for the team.`;
+  const message = `In the next message, please pass the new odds for ${teams[team]}.`;
   return ctx.reply(message);
 }
 
