@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 export type TeamTypes = "A" | "B";
-type Odds = { [key in TeamTypes]: number };
+export type Odds = { [key in TeamTypes]: number };
 export type Teams = { [key in TeamTypes]: string };
 
 export interface StoredMatch {

@@ -11,6 +11,7 @@ import {
 } from "./commands/bet";
 import { duringMatchOnly } from "@/utils/bot";
 import { GenericFunc } from "@/types";
+import { changeOdds, confirmOdds } from "./commands/setOdds";
 
 const steps: { [key: string]: GenericFunc | GenericFunc[] } = {
   setTeamA,
@@ -21,6 +22,8 @@ const steps: { [key: string]: GenericFunc | GenericFunc[] } = {
   prepareBet: [prepareBet, duringMatchOnly],
   cancelPayment,
   verifyPayment,
+  changeOdds,
+  confirmOdds,
 };
 
 export async function executeStep(

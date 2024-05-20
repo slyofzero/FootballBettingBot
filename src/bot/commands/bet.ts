@@ -51,7 +51,7 @@ export async function betAmount(ctx: CallbackQueryContext<Context>) {
   if (!team) return ctx.reply("No team to bet on was found");
 
   const userId = ctx.chat?.id;
-  if (!userId) return ctx.reply("Please do click on the button again");
+  if (!userId) return ctx.reply("Please click on the button again");
 
   betData[userId] = { team };
   userState[userId] = "prepareBet";
