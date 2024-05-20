@@ -1,4 +1,5 @@
 import { removeDocumentById } from "@/firebase";
+import { StoredMatch } from "@/types";
 import { errorHandler } from "@/utils/handlers";
 import { currentMatch, syncMatch } from "@/vars/currentMatch";
 import {
@@ -16,25 +17,27 @@ export async function deleteMatch(ctx: CommandContext<Context>) {
     return ctx.reply(message);
   }
 
-  const { teamA, teamB, expiresAt, id } = currentMatch;
+  const { teams, expiresAt, id } = currentMatch;
   const endsIn = moment(expiresAt.toDate()).fromNow();
   const keyboard = new InlineKeyboard().text(
     "Delete Match",
     `confirmDeleteMatch-${id}`
   );
-  const message = `There's already a match going between ${teamA} and ${teamB}. Match ends ${endsIn}.`;
+  const message = `There's already a match going between ${teams.A} and ${teams.B}. Match ends ${endsIn}.`;
   return ctx.reply(message, { reply_markup: keyboard });
 }
 
 export async function confirmDeleteMatch(ctx: CallbackQueryContext<Context>) {
-  const matchId = ctx.callbackQuery.data.split("-").at(0);
+  const matchId = ctx.callbackQuery.data.split("-").at(-1);
   if (!matchId) return ctx.reply("No match ID was found");
+
+  const { teams } = currentMatch as StoredMatch;
 
   removeDocumentById({ collectionName: "matches", id: matchId })
     .then(() => syncMatch())
     .catch((e) => errorHandler(e));
 
-  const message = `Deleted match`;
+  const message = `Match between ${teams.A} and ${teams.B} was deleted.`;
   ctx.deleteMessage().catch((e) => errorHandler(e));
   return ctx.reply(message);
 }

@@ -1,7 +1,8 @@
 import { admins } from "@/vars/admins";
-import { CommandContext, Context } from "grammy";
+import { currentMatch } from "@/vars/currentMatch";
+import { CallbackQueryContext, CommandContext, Context } from "grammy";
 
-type StepFunctions = (ctx: CommandContext<Context>) => any;
+type StepFunctions = (ctx: any) => any;
 
 export function adminsOnly(fn: StepFunctions, ctx: CommandContext<Context>) {
   const isAdmin = admins.some(
@@ -9,6 +10,19 @@ export function adminsOnly(fn: StepFunctions, ctx: CommandContext<Context>) {
   );
 
   if (isAdmin) fn(ctx);
+}
+
+export function duringMatchOnly(
+  fn: StepFunctions,
+  ctx: CommandContext<Context> | CallbackQueryContext<Context>
+) {
+  if (!currentMatch) {
+    const message =
+      "There is no live match right now. You'll be notified when a match starts.";
+    return ctx.reply(message);
+  }
+
+  fn(ctx);
 }
 
 // eslint-disable-next-line

@@ -4,6 +4,7 @@ declare global {
       BOT_TOKEN: string | undefined;
       BOT_USERNAME: string | undefined;
       NODE_ENV: "development" | "production";
+      MAIN_ADDRESS: "development" | "production";
       FIREBASE_KEY: string | undefined;
     }
   }

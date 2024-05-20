@@ -1,5 +1,5 @@
 import { addDocument } from "@/firebase";
-import { StoredMatch } from "@/types";
+import { StoredMatch, Teams } from "@/types";
 import { defaultOdds } from "@/utils/constants";
 import { currentMatch, syncMatch } from "@/vars/currentMatch";
 import { matchData } from "@/vars/matchData";
@@ -11,9 +11,9 @@ import moment from "moment";
 export async function setMatch(ctx: CommandContext<Context>) {
   // If there's a match already on going
   if (currentMatch) {
-    const { teamA, teamB, expiresAt } = currentMatch;
+    const { teams, expiresAt } = currentMatch;
     const endsIn = moment(expiresAt.toDate()).fromNow();
-    const message = `There's already a match going between ${teamA} and ${teamB}. Match ends ${endsIn}.`;
+    const message = `There's already a match going between ${teams.A} and ${teams.B}. Match ends ${endsIn}.`;
     return ctx.reply(message);
   }
 
@@ -29,7 +29,7 @@ export async function setTeamA(ctx: CommandContext<Context>) {
   const teamA = ctx.message?.text.trim();
 
   if (!teamA) return ctx.reply("Please enter a valid team name");
-  matchData[userId] = { teamA };
+  matchData[userId] = { teams: { A: teamA } };
 
   userState[userId] = "setTeamB";
   const message = "Next up provide the name of Team B.";
@@ -41,7 +41,9 @@ export async function setTeamB(ctx: CommandContext<Context>) {
   const teamB = ctx.message?.text.trim();
 
   if (!teamB) return ctx.reply("Please enter a valid team name");
-  matchData[userId] = { teamB, ...matchData[userId] };
+  const userMatchData = structuredClone(matchData[userId]);
+  userMatchData.teams.B = teamB;
+  matchData[userId] = userMatchData;
 
   userState[userId] = "setDuration";
   const message = "Next up provide the duration of the match in hours.";
@@ -53,7 +55,7 @@ export async function setDuration(ctx: CommandContext<Context>) {
   const duration = Number(ctx.message?.text.trim());
 
   if (!duration) return ctx.reply("Please enter a valid team name");
-  const { teamA, teamB } = matchData[userId];
+  const { teams } = matchData[userId];
   // Clearing out the temporary states
   delete userState[userId];
   delete matchData[userId];
@@ -67,15 +69,16 @@ export async function setDuration(ctx: CommandContext<Context>) {
   addDocument<StoredMatch>({
     collectionName: "matches",
     data: {
-      teamA: teamA || "",
-      teamB: teamB || "",
       expiresAt,
       status: "LIVE",
-      teamAOdds: defaultOdds,
-      teamBOdds: defaultOdds,
+      teams: teams as Teams,
+      odds: {
+        A: defaultOdds,
+        B: defaultOdds,
+      },
     },
   }).then(() => syncMatch());
 
-  const message = `Match started between ${teamA} as Team A, and ${teamB} as Team B. Ends in ${duration} hours.`;
+  const message = `Match started between ${teams.A} as Team A, and ${teams.B} as Team B. Ends in ${duration} hours.`;
   ctx.reply(message);
 }

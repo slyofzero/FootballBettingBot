@@ -1,6 +1,7 @@
 import { WhereFilterOp } from "firebase-admin/firestore";
 import { db } from "./config";
 import { firebaseCollectionPrefix } from "@/utils/constants";
+import { nanoid } from "nanoid";
 
 interface addDocumentInterface<T> {
   data: T;
@@ -37,17 +38,16 @@ export const addDocument = async <T>({
   collectionName,
   id,
 }: addDocumentInterface<T>) => {
+  id ||= nanoid(15);
   collectionName += firebaseCollectionPrefix;
   const collectionRef = db.collection(collectionName);
   let docRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> | null =
     null;
 
-  if (id) {
-    docRef = collectionRef.doc(id);
-    await docRef.set(data as object);
-  } else {
-    docRef = await collectionRef.add(data as object);
-  }
+  // @ts-expect-error ID doesn't exist on <T>
+  data.id = id;
+  docRef = collectionRef.doc(id);
+  await docRef.set(data as object);
 
   return docRef as T;
 };

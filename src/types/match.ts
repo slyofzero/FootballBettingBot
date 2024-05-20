@@ -1,11 +1,13 @@
 import { Timestamp } from "firebase-admin/firestore";
 
+export type TeamTypes = "A" | "B";
+type Odds = { [key in TeamTypes]: number };
+export type Teams = { [key in TeamTypes]: string };
+
 export interface StoredMatch {
   id?: string;
-  teamA: string;
-  teamB: string;
-  expiresAt: Timestamp;
   status: "LIVE" | "EXPIRED";
-  teamAOdds: number;
-  teamBOdds: number;
+  teams: Teams;
+  odds: Odds;
+  expiresAt: Timestamp;
 }

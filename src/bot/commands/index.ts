@@ -5,7 +5,7 @@ import { setMatch } from "./match";
 import { executeStep } from "../executeStep";
 import { CommandContext, Context } from "grammy";
 import { deleteMatch } from "./deleteMatch";
-import { adminsOnly } from "@/utils/bot";
+import { adminsOnly, duringMatchOnly } from "@/utils/bot";
 import { bet } from "./bet";
 
 export function initiateBotCommands() {
@@ -15,7 +15,7 @@ export function initiateBotCommands() {
   ]);
 
   teleBot.command("start", (ctx) => startBot(ctx));
-  teleBot.command("bet", (ctx) => bet(ctx));
+  teleBot.command("bet", (ctx) => duringMatchOnly(bet, ctx));
   teleBot.command("match", (ctx) => adminsOnly(setMatch, ctx));
   teleBot.command("deleteMatch", (ctx) => adminsOnly(deleteMatch, ctx));
 
