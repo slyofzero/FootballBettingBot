@@ -5,5 +5,12 @@ dotenv.config({
   path: NODE_ENV === "development" ? ".env" : ".env.production",
 });
 
-export const { BOT_TOKEN, BOT_USERNAME, FIREBASE_KEY, MAIN_ADDRESS } =
-  process.env;
+export const {
+  BOT_TOKEN,
+  BOT_USERNAME,
+  FIREBASE_KEY,
+  BETTING_POOL_ADDRESS,
+  RPC_URL,
+  ENCRYPTION_KEY,
+  TOKEN_CA,
+} = process.env;

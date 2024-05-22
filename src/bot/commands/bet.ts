@@ -1,15 +1,17 @@
 import {
   addDocument,
+  getDocument,
   getDocumentById,
   removeDocumentById,
   updateDocumentById,
 } from "@/firebase";
-import { StoredBet, StoredMatch, TeamTypes } from "@/types";
+import { StoredAccount, StoredBet, StoredMatch, TeamTypes } from "@/types";
 import { cleanUpBotMessage } from "@/utils/bot";
 import { transactionValidTime } from "@/utils/constants";
-import { MAIN_ADDRESS } from "@/utils/env";
+import { encrypt } from "@/utils/cryptography";
 import { errorHandler, log } from "@/utils/handlers";
-import { getSecondsElapsed } from "@/utils/time";
+import { getSecondsElapsed, sleep } from "@/utils/time";
+import { generateAccount, getTokenBalance } from "@/utils/web3";
 import { BetData, betData } from "@/vars/betData";
 import { currentMatch } from "@/vars/currentMatch";
 import { userState } from "@/vars/userState";
@@ -22,6 +24,40 @@ import {
 } from "grammy";
 import moment from "moment";
 import { nanoid } from "nanoid";
+
+export async function getUnlockedAccount() {
+  let publicKey: string = "";
+
+  const notLockedAccount = (
+    await getDocument<StoredAccount>({
+      collectionName: "accounts",
+      queries: [["locked", "!=", true]],
+    })
+  ).at(0);
+
+  if (notLockedAccount) {
+    publicKey = notLockedAccount.publicKey;
+    updateDocumentById({
+      id: notLockedAccount.id || "",
+      collectionName: "accounts",
+      updates: { locked: true, lockedAt: Timestamp.now() },
+    });
+  } else {
+    const newAccount = generateAccount();
+    publicKey = newAccount.publicKey;
+
+    const newAccountData: StoredAccount = {
+      publicKey,
+      secretKey: encrypt(newAccount.secretKey),
+      locked: true,
+      lockedAt: Timestamp.now(),
+    };
+
+    addDocument({ data: newAccountData, collectionName: "accounts" });
+  }
+
+  return publicKey;
+}
 
 export async function bet(ctx: CommandContext<Context>) {
   const { teams, odds, expiresAt } = currentMatch as StoredMatch;
@@ -74,11 +110,12 @@ export async function prepareBet(ctx: CommandContext<Context>) {
 
   const { teams } = currentMatch as StoredMatch;
   const cleanedAmount = cleanUpBotMessage(amount);
+  const address = await getUnlockedAccount();
   const message = `You have to chosen to bet ${amount} on ${teams[team]}\\.
   
 Send ${cleanedAmount} to the address mentioned below and click on "I have paid" once done\\. Only send the *exact amount*, sending any more or any less will result in transaction failure\\.
 
-\`${MAIN_ADDRESS}\`
+\`${address}\`
 
 If you wish to bet a different amount, please click on the button again and click on the "Cancel" button to cancel this transaction\\.\n
 Pay within 20 minutes of this message generation, if 20 minutes have already passed then please cancel the transaction and retry again\\.`;
@@ -97,6 +134,7 @@ Pay within 20 minutes of this message generation, if 20 minutes have already pas
       match: matchId || "",
       status: "PENDING",
       paymentAt: Timestamp.now(),
+      sentTo: address,
     },
     id: betId,
   });
@@ -134,26 +172,45 @@ export async function verifyPayment(ctx: CallbackQueryContext<Context>) {
     return ctx.reply(message);
   }
 
-  // If payment is verified
-  const { paymentAt, amount, team } = betData;
-  const secondsTillPaymentGeneration = getSecondsElapsed(paymentAt.seconds);
-  if (secondsTillPaymentGeneration > transactionValidTime) {
-    log(`Transaction ${betId} has expired`);
-    const message =
-      "Your payment duration has expired. You were warned not to pay after 20 minutes of payment message generation. If you have already paid, contact the admins.";
-    return ctx.reply(message);
+  const { paymentAt, amount, team, sentTo } = betData;
+
+  attemptsCheck: for (const attempt_number of Array.from(Array(20).keys())) {
+    try {
+      log(`Checking for subscription payment, Attempt - ${attempt_number + 1}`);
+
+      const secondsTillPaymentGeneration = getSecondsElapsed(paymentAt.seconds);
+      if (secondsTillPaymentGeneration > transactionValidTime) {
+        log(`Transaction ${betId} has expired`);
+        const message =
+          "Your payment duration has expired. You were warned not to pay after 20 minutes of payment message generation. If you have already paid, contact the admins.";
+        return ctx.reply(message);
+      }
+
+      // Checking if payment was made
+      const balance = await getTokenBalance(sentTo);
+
+      if (balance < amount) {
+        log(`Token balance doesn't match`);
+        await sleep(15000);
+        continue attemptsCheck;
+      }
+
+      // If payment is verified
+      const { odds, teams } = currentMatch;
+      updateDocumentById<StoredBet>({
+        collectionName: "bets",
+        id: betId,
+        updates: { ...betData, status: "PAID", odds: odds[team] },
+      });
+
+      log(`Verified bet ${betId} of amount ${amount} with odds`);
+      ctx.deleteMessage().catch((e) => errorHandler(e));
+
+      const message = `Your bet was placed with odds ${odds[team]} on ${teams[team]} for ${amount}.`;
+      return ctx.reply(message);
+    } catch (error) {
+      errorHandler(error);
+      ctx.reply(`An error occurred, please try again`);
+    }
   }
-
-  const { odds, teams } = currentMatch;
-  updateDocumentById<StoredBet>({
-    collectionName: "bets",
-    id: betId,
-    updates: { ...betData, status: "PAID", odds: odds[team] },
-  });
-
-  log(`Verified bet ${betId} of amount ${amount} with odds`);
-  ctx.deleteMessage().catch((e) => errorHandler(e));
-
-  const message = `Your bet was placed with odds ${odds[team]} on ${teams[team]} for ${amount}.`;
-  return ctx.reply(message);
 }

@@ -8,5 +8,6 @@ export interface StoredBet {
   match: string;
   status: "PENDING" | "PAID" | "EXPIRED";
   paymentAt: Timestamp;
+  sentTo: string;
   odds?: number;
 }
